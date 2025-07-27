@@ -6,7 +6,7 @@ from uuid import uuid4
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session  
 from app.database import get_db  
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
@@ -22,7 +22,7 @@ def create_access_token(data:dict) -> str:
     Token will expire after ACCESS_TOKEN_EXPIRE_MINUTES
     """
     to_encode = data.copy()
-    expire = datetime.now(datetime.timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
     encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
     return encoded_jwt
@@ -90,7 +90,7 @@ def login(user: UserLogin, db: Session = Depends(get_db)):
         )
     
     # verify password
-    if not bcrypt.checkpw(user.pw.encode("utf-8"), db_user.password_hash.encode("utf-8")):
+    if not bcrypt.checkpw(user.password.encode("utf-8"), db_user.password_hash.encode("utf-8")):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid credential"
