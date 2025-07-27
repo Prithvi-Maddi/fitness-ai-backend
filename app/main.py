@@ -32,6 +32,11 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
 
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+
 app = FastAPI()
 
 Base.metadata.create_all(bind=engine)
@@ -42,7 +47,7 @@ def health_check():
 
 @app.post("/register", status_code=status.HTTP_201_CREATED)
 def register(user: UserCreate, db: Session = Depends(get_db)):
-    # 1. Check if email is already registered
+    # Check if email is already registered
     existing = db.query(User).filter(User.email == user.email).first()
     if existing:
         raise HTTPException(
@@ -50,10 +55,10 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email is already registered."
         )
 
-    # 2. Hash the password
+    # Hash the password
     hashed_pw = bcrypt.hashpw(user.password.encode("utf-8"), bcrypt.gensalt())
 
-    # 3. Create a new User instance
+    # Create a new User instance
     new_user = User(
         id=str(uuid4()),
         name=user.name,
@@ -61,15 +66,38 @@ def register(user: UserCreate, db: Session = Depends(get_db)):
         password_hash=hashed_pw.decode("utf-8")
     )
 
-    # 4. Add to the session and commit
+    # Add to the session and commit
     db.add(new_user)
     db.commit()
-    db.refresh(new_user)  # load any defaults (e.g. created_at)
+    db.refresh(new_user)  # load any defaults
 
-    # 5. Return a safe response
+    # Return a safe response
     return {
         "id": new_user.id,
         "name": new_user.name,
         "email": new_user.email,
         "created_at": new_user.created_at
     }
+
+@app.post("/login")
+def login(user: UserLogin, db: Session = Depends(get_db)):
+    # fetch user by email
+    db_user = db.query(User).filter(User.email == user.email).first()
+    if not db_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Credentials"
+        )
+    
+    # verify password
+    if not bcrypt.checkpw(user.pw.encode("utf-8"), db_user.password_hash.encode("utf-8")):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid credential"
+        )
+    
+    # Generate token with User ID
+    access_token = create_access_token({"sub": db_user.id})
+
+    #return token and token type
+    return {"access_token": access_token, "token_type": "bearer"}
