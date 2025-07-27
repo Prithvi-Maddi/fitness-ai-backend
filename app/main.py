@@ -6,6 +6,15 @@ from uuid import uuid4
 from pydantic import BaseModel, EmailStr
 from sqlalchemy.orm import Session  
 from app.database import get_db  
+from datetime import datetime, timedelta
+from jose import jwt, JWTError
+from dotenv import load_dotenv
+import os
+
+load_dotenv(dotenv_path = ".env")
+SECRET_KEY = os.getenv("JWT_SECRET_KEY")
+ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES"))
+ALGORITHM = "HS256"
 
 class UserCreate(BaseModel):
     name: str
