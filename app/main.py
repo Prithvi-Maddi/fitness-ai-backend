@@ -10,6 +10,8 @@ from datetime import datetime, timedelta, timezone
 from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
+from fastapi.middleware.cors import CORSMiddleware
+
 
 load_dotenv(dotenv_path = ".env")
 SECRET_KEY = os.getenv("JWT_SECRET_KEY")
@@ -38,6 +40,21 @@ class UserLogin(BaseModel):
 
 
 app = FastAPI()
+
+# Allowed origins for the frontend
+origins = [
+    "http://localhost:3000",            # dev server
+    # "https://your-production-frontend",  # add this in prod
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,           # which domains can talk to us
+    allow_credentials=True,          # allow cookies, auth headers
+    allow_methods=["*"],             # allow POST, GET, OPTIONS, etc.
+    allow_headers=["*"],             # allow all headers
+)
+
 
 Base.metadata.create_all(bind=engine)
 
