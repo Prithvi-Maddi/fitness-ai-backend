@@ -11,6 +11,7 @@ from jose import jwt, JWTError
 from dotenv import load_dotenv
 import os
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.security import OAuth2PasswordBearer
 
 
 load_dotenv(dotenv_path = ".env")
